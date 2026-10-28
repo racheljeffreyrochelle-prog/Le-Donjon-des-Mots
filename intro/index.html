@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Le Donjon des Mots</title>
+<meta name="description" content="A short retro adventure that helps a 10-year-old practise French: numbers to 100, where I live, and the weather. Free, on any phone.">
+<meta property="og:title" content="Le Donjon des Mots">
+<meta property="og:description" content="Fall into the Word Dungeon, cheer up four friendly monsters in French, and find your way home.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+    /* Same arcade palette as the game: black screen, white frame, orange menu, cyan help, yellow mercy */
+    :root {
+        color-scheme: dark;
+        --bg: #111;
+        --screen: #000;
+        --fg: #fff;
+        --muted: #b8b8b8;
+        --menu: #ff9900;
+        --help: #0ff;
+        --stat: #ff0;
+        --heart: #ff4d8d;
+        --pixel: 'Press Start 2P', 'Courier New', monospace;
+        --text: 'VT323', 'Courier New', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--text);
+        font-size: 23px;
+        line-height: 1.35;
+        padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+                 max(40px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    }
+
+    main {
+        max-width: 720px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+    }
+
+    a { color: var(--help); }
+    a:focus-visible, .play:focus-visible { outline: 3px solid var(--help); outline-offset: 3px; }
+
+    h1, h2, .play, .tag { font-family: var(--pixel); font-weight: normal; }
+
+    /* Hero */
+    .hero {
+        border: 4px solid var(--fg);
+        background: var(--screen);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        padding: 36px 20px 32px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+    }
+    .tag { font-size: 10px; color: var(--help); letter-spacing: 1px; line-height: 1.8; }
+    h1 {
+        font-size: 30px;
+        line-height: 1.5;
+        color: var(--stat);
+        text-shadow: 4px 4px 0 #a33;
+    }
+    .friends { font-size: 46px; display: flex; gap: 16px; }
+    .friends span { display: inline-block; animation: hop 1s infinite ease-in-out; }
+    .friends span:nth-child(2) { animation-delay: 0.15s; }
+    .friends span:nth-child(3) { animation-delay: 0.3s; }
+    .friends span:nth-child(4) { animation-delay: 0.45s; }
+    @keyframes hop {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .lead { font-size: 27px; max-width: 30ch; }
+    .play {
+        display: inline-block;
+        background: var(--screen);
+        border: 4px solid var(--stat);
+        color: var(--stat);
+        font-size: 16px;
+        padding: 18px 28px;
+        text-decoration: none;
+        animation: blink 0.8s infinite;
+    }
+    .play:hover { background: var(--stat); color: #000; animation: none; }
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    .small { font-size: 20px; color: var(--muted); }
+
+    /* Sections */
+    section { display: flex; flex-direction: column; gap: 16px; }
+    h2 {
+        font-size: 14px;
+        line-height: 1.7;
+        color: var(--menu);
+        border-bottom: 2px dashed #333;
+        padding-bottom: 10px;
+    }
+    .fr { color: var(--stat); }
+    .en { color: var(--muted); }
+
+    .rooms {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        list-style: none;
+    }
+    .room {
+        border: 3px solid var(--fg);
+        background: var(--screen);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .room .who { display: flex; align-items: center; gap: 12px; }
+    .room .face { font-size: 38px; }
+    .room .name { font-family: var(--pixel); font-size: 11px; line-height: 1.7; }
+    .room .place { color: var(--help); font-size: 20px; }
+    .room .hearts { color: var(--heart); letter-spacing: 2px; font-size: 18px; }
+
+    .steps { list-style: none; display: flex; flex-direction: column; gap: 12px; counter-reset: step; }
+    .steps li { display: flex; gap: 14px; align-items: baseline; }
+    .steps li::before {
+        counter-increment: step;
+        content: counter(step);
+        font-family: var(--pixel);
+        font-size: 12px;
+        color: #000;
+        background: var(--menu);
+        padding: 6px 8px;
+        flex: none;
+    }
+
+    .facts {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        list-style: none;
+    }
+    .facts li {
+        border: 2px solid var(--help);
+        padding: 14px 16px;
+    }
+    .facts b { display: block; font-family: var(--pixel); font-weight: normal; font-size: 10px; line-height: 1.8; color: var(--help); margin-bottom: 6px; }
+
+    .closing { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+
+    footer { text-align: center; font-size: 19px; color: var(--muted); }
+
+    @media (max-width: 600px) {
+        body { font-size: 21px; }
+        h1 { font-size: 21px; }
+        .friends { font-size: 38px; }
+        .lead { font-size: 24px; }
+        .play { font-size: 13px; padding: 16px 22px; }
+        h2 { font-size: 12px; }
+        .rooms, .facts { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .friends span, .play { animation: none; }
+    }
+</style>
+</head>
+<body>
+<main>
+
+    <header class="hero">
+        <p class="tag">A FRENCH ADVENTURE FOR AGES 9–11</p>
+        <h1>LE DONJON<br>DES MOTS</h1>
+        <div class="friends" aria-hidden="true"><span>👻</span><span>🐶</span><span>🐸</span><span>🗿</span></div>
+        <p class="lead">Fall into the Word Dungeon, cheer up four friendly monsters in French, and find your way home.</p>
+        <a class="play" href="../">▶ JOUER</a>
+        <p class="small">Free · plays in the browser on any phone · about 10 minutes</p>
+    </header>
+
+    <section aria-labelledby="story">
+        <h2 id="story">THE STORY</h2>
+        <p>You're playing in the garden when you fall down a hole and land in <span class="fr">le Donjon des Mots</span>. The monsters down here have forgotten their words, and they're sad about it.</p>
+        <p>You don't fight them. You help them remember, one French answer at a time. When a monster is happy again, you spare it, and it lets you pass. Get past the great stone door and you're home.</p>
+    </section>
+
+    <section aria-labelledby="rooms">
+        <h2 id="rooms">FOUR ROOMS, FOUR FRIENDS</h2>
+        <ul class="rooms">
+            <li class="room">
+                <div class="who"><span class="face" aria-hidden="true">👻</span><span class="name">BRUMETTE</span></div>
+                <span class="place">La Grotte · the cave</span>
+                <p>A shy ghost who has forgotten her home. Tell her where you live: <span class="fr">en ville, à la campagne, près de la mer…</span></p>
+            </li>
+            <li class="room">
+                <div class="who"><span class="face" aria-hidden="true">🐶</span><span class="name">CROQUETTE</span></div>
+                <span class="place">Le Pont · the bridge</span>
+                <p>A dog with more bones than she can count. Help her count to 69: <span class="fr">vingt et un, trente-deux…</span></p>
+            </li>
+            <li class="room">
+                <div class="who"><span class="face" aria-hidden="true">🐸</span><span class="name">RAINETTE</span></div>
+                <span class="place">La Mare · the pond</span>
+                <p>A frog who dreams of seeing the world. Talk about the weather and places, and read her numbers.</p>
+            </li>
+            <li class="room">
+                <div class="who"><span class="face" aria-hidden="true">🗿</span><span class="name">MONSIEUR CENT</span></div>
+                <span class="place">La Grande Porte · the great door</span>
+                <p>A stone giant who only lets you out if you can count to 100: <span class="fr">soixante-dix, quatre-vingts, cent !</span></p>
+            </li>
+        </ul>
+    </section>
+
+    <section aria-labelledby="how">
+        <h2 id="how">HOW TO PLAY</h2>
+        <ol class="steps">
+            <li><p>Tap <b>▶ JOUER</b>. Every line is read aloud in French, with the English underneath <span class="en">(like this)</span>.</p></li>
+            <li><p>Answer the monster's question by tapping one of the choices. Each right answer fills a <span style="color: var(--heart)">♥</span>.</p></li>
+            <li><p>When all the hearts are full, tap <span class="fr">⭐ ÉPARGNER</span> to spare the monster. It gives you a pie 🥧.</p></li>
+            <li><p>When a monster says <span class="fr">« Répète ! »</span>, say the French out loud. Nobody's checking, so be brave!</p></li>
+        </ol>
+        <p>Wrong answers are fine. The monster does something silly, like licking your face, and you get a bigger hint. You can never lose.</p>
+    </section>
+
+    <section aria-labelledby="parents">
+        <h2 id="parents">FOR PARENTS</h2>
+        <ul class="facts">
+            <li><b>WHAT IT PRACTISES</b>Numbers 1–100, with extra practice on the tricky ones: 70–99. Also where I live, places and the weather.</li>
+            <li><b>WHO IT'S FOR</b>Children about 10 in their first years of school French, who know 1–20 and want to practise between lessons.</li>
+            <li><b>HOW LONG</b>The whole game takes one or two 5–10 minute sessions. Progress is saved on the phone between them.</li>
+            <li><b>PRIVACY</b>No accounts, no ads, no tracking and no microphone. Nothing about your child leaves the phone.</li>
+            <li><b>SOUND</b>Best with sound on: the phone's French voice reads everything aloud. It still works with sound off.</li>
+            <li><b>NO HELP NEEDED</b>You don't need to speak French. English help is on screen all the way through.</li>
+        </ul>
+    </section>
+
+    <section class="closing" aria-label="Play">
+        <p class="lead">Ready to fall down the hole?</p>
+        <a class="play" href="../">▶ JOUER</a>
+    </section>
+
+    <footer>
+        <p>Inspired by the idea of sparing monsters instead of fighting them. All characters, art and words are original.</p>
+    </footer>
+
+</main>
+</body>
+</html>
