@@ -297,12 +297,84 @@
         .menu button { font-size: 10px; padding: 16px 4px; border-width: 3px; }
     }
 
+    /* Loading screen: covers the game until the font and the French voice are ready */
+    .loading {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        padding: 16px;
+        text-align: center;
+    }
+    .loading h1 {
+        font-family: var(--pixel);
+        font-weight: normal;
+        font-size: 24px;
+        line-height: 1.6;
+        color: var(--stat);
+        text-shadow: 4px 4px 0 #a33;
+    }
+    .loading .friends { font-size: 40px; display: flex; gap: 14px; }
+    .loading .friends span { display: inline-block; animation: hop 1s infinite ease-in-out; }
+    .loading .friends span:nth-child(2) { animation-delay: 0.15s; }
+    .loading .friends span:nth-child(3) { animation-delay: 0.3s; }
+    .loading .friends span:nth-child(4) { animation-delay: 0.45s; }
+    @keyframes hop {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .loading .bar {
+        width: min(320px, 100%);
+        height: 24px;
+        border: 3px solid var(--fg);
+        padding: 3px;
+    }
+    .loading .fill {
+        height: 100%;
+        width: 0;
+        background: var(--stat);
+        transition: width 0.4s steps(6);
+    }
+    .loading .status { font-family: var(--pixel); font-size: 11px; line-height: 1.8; color: var(--help); }
+    .loading .start {
+        background: var(--screen);
+        border: 4px solid var(--stat);
+        color: var(--stat);
+        font-family: var(--pixel);
+        font-size: 16px;
+        padding: 18px 28px;
+        animation: blink 0.8s infinite;
+    }
+    .loading .start:hover { background: var(--stat); color: #000; }
+
+    @media (max-width: 600px) {
+        .loading h1 { font-size: 20px; }
+        .loading .friends { font-size: 34px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-        .monster, .monster.shake, .arena.hurt, .next, .menu button.ready { animation: none; }
+        .monster, .monster.shake, .arena.hurt, .next, .menu button.ready,
+        .loading .friends span, .loading .start { animation: none; }
+        .loading .fill { transition: none; }
     }
 </style>
 </head>
 <body>
+
+<div class="loading" id="loading">
+    <h1>LE DONJON<br>DES MOTS</h1>
+    <div class="friends" aria-hidden="true"><span>👻</span><span>🐶</span><span>🐸</span><span>🗿</span></div>
+    <div class="bar" role="progressbar" aria-label="Chargement" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="bar">
+        <div class="fill" id="bar-fill"></div>
+    </div>
+    <p class="status" id="load-text">CHARGEMENT...<br><span class="en">(Loading...)</span></p>
+    <button class="start" id="start" type="button" hidden>▶ JOUER</button>
+</div>
 
 <div class="game">
     <div class="stats">
@@ -1119,8 +1191,39 @@
         }
     };
 
+    // ================= LOADING =================
+    // Waits for the pixel font and the French voice, then asks for a tap:
+    // phones only allow speech after the player has touched the screen
+    const atMost = (promise, ms) => Promise.race([promise, new Promise(r => setTimeout(r, ms))]);
+    function voicesReady() {
+        if (!("speechSynthesis" in window) || window.speechSynthesis.getVoices().length) return Promise.resolve();
+        return new Promise(r => window.speechSynthesis.addEventListener("voiceschanged", r, { once: true }));
+    }
+    function setProgress(pct) {
+        $("bar-fill").style.width = pct + "%";
+        $("bar").setAttribute("aria-valuenow", pct);
+    }
+    async function boot() {
+        const shortest = new Promise(r => setTimeout(r, 1200));
+        setProgress(15);
+        await atMost(document.fonts ? document.fonts.ready : Promise.resolve(), 3000);
+        setProgress(50);
+        await atMost(voicesReady(), 2000);
+        if ("speechSynthesis" in window) pickVoice();
+        setProgress(80);
+        await shortest;
+        setProgress(100);
+        $("load-text").innerHTML = "PRÊT !<br><span class=\"en\">(Ready! Tap to play)</span>";
+        $("start").hidden = false;
+        $("start").focus();
+    }
+    $("start").onclick = () => {
+        $("loading").hidden = true;
+        title();
+    };
+
     // ================= START =================
-    title();
+    boot();
 </script>
 
 </body>
