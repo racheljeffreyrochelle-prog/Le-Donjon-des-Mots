@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hack Day: Le Donjon des Mots</title>
+<meta name="description" content="What I built at Hack Day Manchester on 28 October 2026: Le Donjon des Mots, a French-practice phone game, made on a phone with Claude and GitHub.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* Layout: one arcade "screen" column, a save-log timeline down the middle, the game's own palette. Deliberately single dark theme. */
+  :root {
+    color-scheme: dark;
+    --bg: #111;
+    --screen: #000;
+    --fg: #fff;
+    --muted: #b8b8b8;
+    --line: #444;
+    --menu: #ff9900;
+    --help: #0ff;
+    --stat: #ff0;
+    --heart: #ff4d8d;
+    --pixel: 'Press Start 2P', 'Courier New', monospace;
+    --text: 'VT323', 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0;
+    background: var(--bg); color: var(--fg);
+    font-family: var(--text); font-size: 22px; line-height: 1.35;
+    padding-top: max(28px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(56px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 44px; }
+  h1, h2, .tag, .btn, .time, .num { font-family: var(--pixel); font-weight: normal; }
+  h1 { font-size: clamp(20px, 5vw, 30px); line-height: 1.5; color: var(--stat); text-shadow: 4px 4px 0 #a33; margin: 0; text-wrap: balance; }
+  h2 { font-size: 13px; color: var(--menu); letter-spacing: 1px; line-height: 1.7; margin: 0 0 16px; }
+  p { margin: 0; max-width: 62ch; }
+  a { color: var(--help); }
+  a:focus-visible { outline: 3px solid var(--help); outline-offset: 3px; }
+  .muted { color: var(--muted); }
+
+  .hero {
+    border: 4px solid var(--fg); background: var(--screen);
+    box-shadow: 0 0 20px rgba(255,255,255,.18);
+    padding: 32px 22px; display: flex; flex-direction: column; gap: 18px;
+  }
+  .tag { font-size: 10px; color: var(--help); letter-spacing: 1px; line-height: 1.8; }
+  .lede { font-size: 25px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
+  .btn {
+    font-size: 11px; line-height: 1.6; text-decoration: none; color: var(--menu);
+    border: 3px solid var(--menu); padding: 12px 14px; background: var(--screen);
+  }
+  .btn:hover { color: var(--stat); border-color: var(--stat); }
+  .btn::before { content: "♥ "; color: var(--heart); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat { border: 2px solid var(--line); padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .num { font-size: 20px; color: var(--stat); }
+  .stat span:last-child { color: var(--muted); font-size: 19px; line-height: 1.15; }
+  @media (max-width: 560px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .log li { display: grid; grid-template-columns: 74px 1fr; gap: 16px; padding: 14px 0; border-top: 1px dashed var(--line); }
+  .log li:first-child { border-top: 0; }
+  .time { font-size: 11px; color: var(--help); padding-top: 5px; }
+  .log strong { font-weight: normal; color: var(--fg); display: block; }
+  .log .pr { color: var(--menu); font-size: 18px; }
+  .log div { min-width: 0; }
+  .log p { color: var(--muted); font-size: 20px; }
+
+  .moves { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+  .moves li { border: 2px solid var(--line); padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .moves li.done { border-color: var(--fg); background: var(--screen); }
+  .mv { font-family: var(--pixel); font-size: 10px; letter-spacing: 1px; color: var(--muted); }
+  .mv::before { content: "○ "; }
+  .moves li.done .mv { color: var(--stat); }
+  .moves li.done .mv::before { content: "♥ "; color: var(--heart); }
+  .moves p { font-size: 20px; color: var(--muted); }
+  .moves li.done p { color: var(--fg); }
+
+  .pitch { border-left: 4px solid var(--stat); padding: 4px 0 4px 16px; margin: 0; font-size: 24px; max-width: 62ch; }
+  .steps { margin: 0; padding-left: 28px; display: flex; flex-direction: column; gap: 8px; color: var(--muted); }
+  .steps li::marker { font-family: var(--pixel); font-size: 11px; color: var(--menu); }
+  .steps b { color: var(--fg); font-weight: normal; }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+
+  .talks { display: flex; flex-direction: column; gap: 16px; }
+  .talk { border: 2px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .talk h3 { margin: 0; font-family: var(--pixel); font-weight: normal; font-size: 12px; line-height: 1.7; color: var(--stat); }
+  .talk h3 span { display: block; color: var(--muted); font-size: 9px; letter-spacing: 1px; }
+  .talk ol { margin: 0; padding-left: 28px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); }
+  .talk ol li::marker { font-family: var(--pixel); font-size: 10px; color: var(--menu); }
+  .quote { margin: 0; border: 3px solid var(--fg); background: var(--screen); padding: 14px 16px; font-size: 25px; color: var(--fg); }
+  .quote::before { content: "* "; color: var(--heart); }
+
+  .wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 20px; }
+  th { font-family: var(--pixel); font-size: 10px; color: var(--help); text-align: left; letter-spacing: 1px; padding: 0 10px 10px 0; font-weight: normal; }
+  td { border-top: 1px solid var(--line); padding: 9px 10px 9px 0; vertical-align: top; }
+  td:first-child { color: var(--stat); white-space: nowrap; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  @media (max-width: 620px) { .two { grid-template-columns: 1fr; } }
+  ul.items { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  ul.items li::before { content: "* "; color: var(--menu); }
+  ul.items li { color: var(--muted); }
+  ul.items li b { color: var(--fg); font-weight: normal; }
+
+  .check { border: 3px solid var(--fg); background: var(--screen); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .digits { font-family: var(--pixel); font-size: 14px; color: var(--stat); letter-spacing: 2px; line-height: 1.8; }
+  footer { color: var(--muted); font-size: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <span class="tag">HACK DAY · WED 28 OCT 2026 · MANCHESTER</span>
+    <h1>Le Donjon des Mots</h1>
+    <p class="lede">I built a small Undertale-style phone game that helps a 10-year-old practise French between weekly lessons: numbers to 100, where I live, and the weather.</p>
+    <p class="muted">The brief for the day: build something real, publish it, take it home. I went from an empty repo at 11:56 to a live game, an agreed PRD and an intro page by 15:11, all from my phone with Claude and GitHub. No laptop.</p>
+    <div class="actions">
+      <a class="btn" href="https://racheljeffreyrochelle-prog.github.io/Le-Donjon-des-Mots/">Play the game</a>
+      <a class="btn" href="https://racheljeffreyrochelle-prog.github.io/Le-Donjon-des-Mots/intro/">Intro page</a>
+      <a class="btn" href="https://github.com/racheljeffreyrochelle-prog/le-donjon-des-mots">Source</a>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="The day in numbers">
+    <div class="stat"><span class="num">7</span><span>pull requests merged</span></div>
+    <div class="stat"><span class="num">4</span><span>rooms, 4 monsters</span></div>
+    <div class="stat"><span class="num">21–100</span><span>new numbers taught</span></div>
+    <div class="stat"><span class="num">1</span><span>phone, no laptop</span></div>
+  </section>
+
+  <section>
+    <h2>* THE SEVEN MOVES</h2>
+    <ol class="moves">
+      <li class="done"><span class="mv">CONVERSE</span><p>Talked the idea through with Claude: one 10-year-old, a weekly lesson, almost no practice in between.</p></li>
+      <li class="done"><span class="mv">DEFINE</span><p>Agreed a small first version: four rooms, numbers 21–100, home and weather. Written up as the PRD.</p></li>
+      <li class="done"><span class="mv">BUILD</span><p>Built on my phone with Claude, reviewed and merged in GitHub. One static page with four monsters, spoken questions, hints and saved progress.</p></li>
+      <li class="done"><span class="mv">PUBLISH</span><p>Live on GitHub Pages by 13:03, with automatic deploys from 13:11.</p></li>
+      <li class="done"><span class="mv">IMPROVE</span><p>Harder-to-guess questions, stronger hints, and the pixel font back after trying a plainer one.</p></li>
+      <li><span class="mv">TEST</span><p>Next: the child plays it for a week, with a number check before and after.</p></li>
+      <li><span class="mv">CONTINUE</span><p>Then decide: fix problems, add content, or stop. A microphone is the first open question.</p></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>* TAKING HOME</h2>
+    <ul class="items">
+      <li><b>A live web address</b> anyone can open: <a href="https://racheljeffreyrochelle-prog.github.io/Le-Donjon-des-Mots/">racheljeffreyrochelle-prog.github.io/Le-Donjon-des-Mots</a></li>
+      <li><b>A product brief saved in GitHub:</b> <a href="https://github.com/racheljeffreyrochelle-prog/le-donjon-des-mots/blob/main/PRD.md">PRD.md</a></li>
+      <li><b>The know-how to change it and publish again:</b> 7 changes merged and deployed today.</li>
+    </ul>
+  </section>
+
+  <section class="stack">
+    <h2>* HOW I STARTED</h2>
+    <p class="muted">My pitch, as I wrote it in my notebook:</p>
+    <blockquote class="pitch">A child falls into a dungeon and finds their way home by answering spoken French questions about where they live, the weather, hobbies and numbers up to 100, cheering up 4 friendly monsters and sparing them instead of fighting them.</blockquote>
+    <ol class="steps">
+      <li><b>New GitHub repo.</b></li>
+      <li><b>New Claude Code session</b> on it.</li>
+      <li><b>Create the PRD</b> and save it as a .md file in the repo.</li>
+      <li><b>Build, publish and improve</b>, one change at a time.</li>
+      <li><b>Ask Claude for a single web page</b> on what I built, with a link to it. This page.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>* SAVE LOG</h2>
+    <ol class="log">
+      <li><span class="time">11:56</span><div><strong>Started the repo</strong><p>Initial commit for Le Donjon des Mots.</p></div></li>
+      <li><span class="time">13:03</span><div><strong>Put the game online <span class="pr">#1</span></strong><p>The whole game as one static page, ready for GitHub Pages.</p></div></li>
+      <li><span class="time">13:11</span><div><strong>Automatic publishing <span class="pr">#2</span></strong><p>A GitHub Actions workflow deploys every merge to Pages.</p></div></li>
+      <li><span class="time">14:31</span><div><strong>Numbers 21–100, harder to guess <span class="pr">#3</span></strong><p>Compound numbers and 70–100, random questions per room, 3 shuffled choices, stronger hints like "70 = soixante + dix".</p></div></li>
+      <li><span class="time">14:37</span><div><strong>Back to the pixel font <span class="pr">#4</span></strong><p>Tried a plainer font, chose the pixel font everywhere, a step larger.</p></div></li>
+      <li><span class="time">14:47</span><div><strong>Loading screen <span class="pr">#5</span></strong><p>A proper start to the adventure.</p></div></li>
+      <li><span class="time">14:56</span><div><strong>Wrote the PRD <span class="pr">#6</span></strong><p>User, goals, scope, assumptions and a one-week test plan, linked from the README.</p></div></li>
+      <li><span class="time">15:11</span><div><strong>Introduction page <span class="pr">#7</span></strong><p>A landing page in the same arcade style that explains the game and links to it.</p></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>* THE FOUR ROOMS</h2>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>ROOM</th><th>MONSTER</th><th>PRACTISES</th></tr></thead>
+        <tbody>
+          <tr><td>La Grotte</td><td>Brumette, a ghost</td><td>Where I live: town, village, countryside, sea, mountains</td></tr>
+          <tr><td>Le Pont</td><td>Croquette, a dog</td><td>Warm-up 1–20, then 21–69 (vingt et un, trente-deux …)</td></tr>
+          <tr><td>La Mare</td><td>Rainette, a frog</td><td>Weather and places, plus reading 21–69</td></tr>
+          <tr><td>La Grande Porte</td><td>Monsieur Cent, a stone giant</td><td>70–100 (soixante-dix, quatre-vingts, cent)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="two">
+    <div>
+      <h2>* HOW IT PLAYS</h2>
+      <ul class="items">
+        <li><b>Every question is read aloud</b> in French, with English in brackets.</li>
+        <li><b>Right answers fill a ♥.</b> Full hearts unlock ⭐ ÉPARGNER to spare the monster.</li>
+        <li><b>Wrong answers</b> bring a silly attack and a better hint. You can't lose.</li>
+        <li><b>"Répète !"</b> invites the child to say the answer out loud.</li>
+        <li><b>Progress saves</b> on the phone between sittings.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>* DESIGNED FOR ONE KID</h2>
+      <ul class="items">
+        <li><b>5–10 minute sittings</b>, at home or in the car.</li>
+        <li><b>Works with sound off</b>, with a 🔊 replay on every question.</li>
+        <li><b>No time pressure</b>, large tap targets, reduced motion respected.</li>
+        <li><b>No accounts, ads, tracking or microphone.</b></li>
+        <li><b>All characters and art are original.</b></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>* NEXT: ONE-WEEK TRIAL</h2>
+    <div class="check">
+      <p>Before and after the week, the child hears these 8 numbers and taps the digits. The goal is a score at least 3 higher, plus at least two unprompted plays.</p>
+      <div class="digits">24 · 37 · 51 · 68 · 71 · 79 · 84 · 96</div>
+      <p class="muted">Watching whether they say the "Répète !" lines aloud decides if a microphone is worth adding later.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>* NOTES FROM THE TALKS</h2>
+    <div class="talks">
+      <article class="talk">
+        <h3>Phil Bonnard<span>HOST</span></h3>
+        <ul class="items">
+          <li><b>Built "Said Store"</b>, an iOS app for conference notes.</li>
+          <li><b>ChatGPT for strategy:</b> get it to interview you.</li>
+          <li><b>Claude or Codex for the build.</b></li>
+          <li><b>Know when to stop.</b></li>
+          <li><b>Know when to plan before you build.</b></li>
+        </ul>
+      </article>
+      <article class="talk">
+        <h3>Sam Kness<span>CLINICAL PARTNERS · AUTISM &amp; ADHD ASSESSMENTS</span></h3>
+        <ul class="items">
+          <li><b>AI agents</b> for community listening and industry briefings.</li>
+          <li><b>Claude with the Figma MCP</b> as a living blueprint.</li>
+          <li><b>The Mobbin MCP</b>, one to try.</li>
+          <li><b>Used Claude to make a blood pressure video.</b></li>
+          <li><b>A shared knowledge repository.</b></li>
+        </ul>
+        <p class="quote">AI gets you there faster. People decide where "there" is.</p>
+      </article>
+      <article class="talk">
+        <h3>Hal Sarjant<span>PRODUCT DEVELOPMENT</span></h3>
+        <ul class="items">
+          <li><b>Start with the bit you hate.</b> For Hal that's data analysis: there's never a dashboard you want or like.</li>
+          <li><b>The pitch:</b> type an address and get instant roof prices.</li>
+        </ul>
+        <ol id="hal-tips">
+          <li>Let it interview you.</li>
+          <li>Talk, don't type.</li>
+          <li>Get something to react to: a prototype with fake data.</li>
+          <li>Show it to someone.</li>
+          <li>Say what good looks like.</li>
+          <li>Treat the agents like a team and make them check each other's work: build, check, step back.</li>
+        </ol>
+      </article>
+      <article class="talk">
+        <h3>Dan Kupfer<span>PRESENTED CANCARA CREATE</span></h3>
+        <ul class="items">
+          <li><b>Paste in a Figma link</b> to start from an existing design.</li>
+          <li><b>Change the customer</b> the design is for.</li>
+          <li><b>Dark mode.</b></li>
+          <li><b>Extensions.</b></li>
+        </ul>
+        <p class="muted">What I did:</p>
+        <ul class="items">
+          <li><b>Joined the Cancara Create pilot group.</b></li>
+          <li><b>Connected GitHub.</b></li>
+          <li><b>Downloaded the GitHub Copilot desktop app.</b></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <footer>Built at Hack Day, Manchester, 28 October 2026, on a phone, with Claude and GitHub. Times are UK time, from the repository history. Sample content only: the game and this page use no work data.</footer>
+</main>
+</body>
+</html>
