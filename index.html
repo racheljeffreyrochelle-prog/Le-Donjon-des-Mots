@@ -1,0 +1,923 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Le Donjon des Mots</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+    /* Single retro arcade look: black screen, white frame, orange menu, cyan help, yellow mercy */
+    :root {
+        color-scheme: dark;
+        --bg: #111;
+        --screen: #000;
+        --arena: #050505;
+        --fg: #fff;
+        --menu: #ff9900;
+        --help: #0ff;
+        --stat: #ff0;
+        --good: #0f0;
+        --bad: #ff5a5a;
+        --heart: #ff4d8d;
+        --dim: #444;
+        --pixel: 'Press Start 2P', 'Courier New', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+
+    body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--pixel);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding-block: 16px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        font-size: 13px;
+    }
+
+    button { font-family: var(--pixel); cursor: pointer; }
+    button:focus-visible { outline: 3px solid var(--help); outline-offset: 2px; }
+
+    .game {
+        width: 100%;
+        max-width: 640px;
+        border: 4px solid var(--fg);
+        background: var(--screen);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+
+    .stats {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 10px;
+        color: var(--stat);
+        border-bottom: 2px dashed #333;
+        padding-bottom: 10px;
+    }
+    .stats .hp { color: var(--good); }
+    .stats .hp.low { color: var(--bad); }
+
+    .arena {
+        border: 4px solid var(--fg);
+        background: var(--arena);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        padding: 20px 16px;
+        min-height: 360px;
+    }
+
+    .foe {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 10px;
+    }
+    .foe .hearts { color: var(--heart); letter-spacing: 2px; }
+    .foe.happy .name { color: var(--stat); }
+
+    .monster {
+        font-size: 48px;
+        animation: float 2s infinite ease-in-out;
+        transition: opacity 0.8s, filter 0.8s;
+    }
+    .monster.spared { opacity: 0.45; filter: grayscale(1); animation: none; }
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(6px); }
+    }
+    .monster.shake { animation: shake 0.3s 2; }
+    @keyframes hurt {
+        0%, 100% { border-color: var(--fg); }
+        50% { border-color: var(--bad); }
+    }
+    .arena.hurt { animation: hurt 0.25s 3; }
+
+    .dialogue {
+        width: 100%;
+        font-size: 12px;
+        line-height: 1.9;
+        text-align: left;
+        min-height: 46px;
+    }
+
+    .show {
+        font-size: 30px;
+        line-height: 1.4;
+        letter-spacing: 4px;
+        text-align: center;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+    .show.word {
+        font-size: 20px;
+        line-height: 1.6;
+        letter-spacing: 0;
+        color: var(--stat);
+    }
+    .show.sentence {
+        font-size: 14px;
+        line-height: 1.8;
+        letter-spacing: 0;
+        color: var(--stat);
+    }
+
+    .hint {
+        width: 100%;
+        font-size: 9px;
+        line-height: 1.7;
+        color: var(--help);
+        min-height: 15px;
+    }
+
+    .choices {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .choices.long { grid-template-columns: 1fr; }
+    .choice {
+        background: var(--screen);
+        border: 3px solid var(--fg);
+        color: var(--fg);
+        padding: 16px 8px;
+        font-size: 14px;
+        line-height: 1.6;
+        transition: 0.1s;
+    }
+    .choice.digit { font-size: 26px; }
+    .choice.pic { font-size: 40px; padding: 10px 8px; }
+    .choice.small { font-size: 11px; text-align: left; padding: 14px 12px; }
+    .choice:hover { background: var(--menu); color: #000; border-color: var(--menu); }
+    .choice.wrong { border-color: var(--bad); color: var(--bad); }
+    .choice.right { background: var(--good); color: #000; border-color: var(--good); }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    .listen {
+        background: var(--screen);
+        border: 2px solid var(--help);
+        color: var(--help);
+        font-size: 10px;
+        padding: 10px 14px;
+    }
+    .listen:hover { background: var(--help); color: #000; }
+
+    .next {
+        background: var(--fg);
+        color: #000;
+        border: 0;
+        font-size: 12px;
+        padding: 14px 18px;
+        animation: blink 1.2s infinite;
+    }
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    /* Bag (OBJET): pies + word book */
+    .bag {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .pie {
+        background: var(--screen);
+        border: 2px solid var(--menu);
+        color: var(--menu);
+        font-size: 10px;
+        padding: 12px;
+    }
+    .pie:hover { background: var(--menu); color: #000; }
+    .bag h3 {
+        font-size: 9px;
+        font-weight: normal;
+        color: var(--help);
+        letter-spacing: 1px;
+    }
+    .bag .grid {
+        display: grid;
+        gap: 8px;
+    }
+    .bag .grid button {
+        background: var(--screen);
+        border: 2px solid var(--help);
+        color: var(--fg);
+        padding: 8px 2px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        font-size: 8px;
+        line-height: 1.4;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+    .bag .grid button b { font-size: 16px; color: var(--stat); font-weight: normal; }
+    .bag .grid button:hover { background: var(--help); color: #000; }
+    .bag .grid button:hover b { color: #000; }
+
+    .menu {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+    .menu button {
+        background: var(--screen);
+        border: 4px solid var(--menu);
+        color: var(--menu);
+        font-size: 10px;
+        padding: 16px 4px;
+    }
+    .menu button:hover:not(:disabled) { background: var(--menu); color: #000; }
+    .menu button:active:not(:disabled) { transform: scale(0.95); }
+    .menu button:disabled { border-color: var(--dim); color: var(--dim); cursor: not-allowed; }
+    .menu button.ready {
+        border-color: var(--stat);
+        color: var(--stat);
+        animation: blink 0.8s infinite;
+    }
+    .menu button.ready:hover { background: var(--stat); color: #000; }
+
+    @media (max-width: 600px) {
+        .game { padding: 12px; border-width: 3px; gap: 12px; }
+        .stats { font-size: 8px; }
+        .arena { padding: 16px 10px; border-width: 3px; }
+        .foe { font-size: 8px; }
+        .dialogue { font-size: 10px; }
+        .show { font-size: 26px; }
+        .show.word { font-size: 17px; }
+        .show.sentence { font-size: 12px; }
+        .choice { font-size: 13px; }
+        .choice.digit { font-size: 24px; }
+        .choice.small { font-size: 10px; }
+        .bag .grid button { font-size: 7px; }
+        .menu { grid-template-columns: 1fr 1fr; gap: 10px; }
+        .menu button { font-size: 9px; padding: 14px 4px; border-width: 3px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .monster, .monster.shake, .arena.hurt, .next, .menu button.ready { animation: none; }
+    }
+</style>
+
+<div class="game">
+    <div class="stats">
+        <span id="room">LE JARDIN</span>
+        <span>HP <span class="hp" id="hp">20/20</span></span>
+        <span>XP <span id="xp">0</span></span>
+    </div>
+
+    <div class="arena" id="arena">
+        <div class="foe" id="foe" hidden>
+            <span class="name" id="foe-name"></span>
+            <span class="hearts" id="foe-hearts"></span>
+        </div>
+        <div class="monster" id="monster">🌳</div>
+        <div class="dialogue" id="dialogue"></div>
+        <div class="show" id="show"></div>
+        <div class="hint" id="hint"></div>
+        <div class="choices" id="choices" hidden></div>
+        <div class="bag" id="bag" hidden></div>
+        <div class="row">
+            <button class="listen" id="listen" type="button">🔊 ÉCOUTER</button>
+            <button class="next" id="next" type="button" hidden>CONTINUER ▶</button>
+        </div>
+    </div>
+
+    <div class="menu" id="menu">
+        <button type="button" data-act="fight">⚔️ COMBAT</button>
+        <button type="button" data-act="talk">💬 PARLER</button>
+        <button type="button" data-act="item">🎒 OBJET</button>
+        <button type="button" data-act="spare" id="spare-btn">⭐ ÉPARGNER</button>
+    </div>
+</div>
+
+<script>
+    // ================= WORDS =================
+    const NUM = {
+        1: "un", 2: "deux", 3: "trois", 4: "quatre", 5: "cinq",
+        6: "six", 7: "sept", 8: "huit", 9: "neuf", 10: "dix",
+        11: "onze", 12: "douze", 13: "treize", 14: "quatorze", 15: "quinze",
+        16: "seize", 17: "dix-sept", 18: "dix-huit", 19: "dix-neuf",
+        20: "vingt", 30: "trente", 40: "quarante", 50: "cinquante",
+        60: "soixante", 100: "cent"
+    };
+
+    const PLACES = [
+        { fr: "la maison", emoji: "🏠", en: "the house" },
+        { fr: "la ville", emoji: "🏙️", en: "the town" },
+        { fr: "la campagne", emoji: "🌾", en: "the countryside" },
+        { fr: "le parc", emoji: "🌳", en: "the park" },
+        { fr: "la plage", emoji: "🏖️", en: "the beach" },
+        { fr: "la mer", emoji: "🌊", en: "the sea" },
+        { fr: "la montagne", emoji: "🏔️", en: "the mountain" },
+        { fr: "le monde", emoji: "🌍", en: "the world" }
+    ];
+
+    // ================= STORY =================
+    const PRELUDE = [
+        { scene: "🌳", room: "LE JARDIN",
+          text: "* Tu joues dans le jardin. Il fait beau.<br>* (You're playing in the garden. It's sunny.)" },
+        { scene: "🕳️", room: "LE JARDIN",
+          text: "* Oh non ! Il y a un trou !<br>* Tu tombes... tu tombes... (You fall... and fall...)" },
+        { scene: "🏰", room: "???",
+          text: "* Bienvenue dans le Donjon des Mots !<br>* (Welcome to the Word Dungeon!)" },
+        { scene: "🏰", room: "???",
+          text: "* Les monstres ici ont oublié leurs mots.<br>* Aide-les ! (The monsters forgot their words. Help them!)" },
+        { scene: "⭐", room: "???",
+          text: "* Réponds bien, et un monstre devient content. ♥<br>* Quand il est content, touche ⭐ ÉPARGNER ! (When it's happy, tap SPARE!)" }
+    ];
+
+    const ENDING = [
+        { scene: "🚪", room: "LA GRANDE PORTE",
+          text: "* La grande porte s'ouvre...<br>* Tu vois le ciel ! (You see the sky!)" },
+        { scene: "👻🐶🐸🗿", room: "LA GRANDE PORTE",
+          text: "* Tes amis monstres sont là.<br>* « Au revoir ! À bientôt ! » (Goodbye! See you soon!)" },
+        { scene: "🏡", room: "CHEZ TOI",
+          text: "* Tu es de retour chez toi.<br>* Tu parles français, et tu comptes jusqu'à cent ! (You can count to 100!)" }
+    ];
+
+    const CHAPTERS = [
+        {
+            room: "LA GROTTE", scene: "🕯️",
+            pages: ["* Il fait sombre ici...<br>* Quelque chose flotte vers toi. (Something floats toward you.)"],
+            monster: {
+                emoji: "👻", name: "Brumette",
+                appear: "* Brumette apparaît !<br>* Elle a oublié sa maison. Elle est triste. (She forgot her home. She's sad.)",
+                talk: [
+                    "* Tu dis bonjour à Brumette.<br>* Elle rougit. (She blushes.)",
+                    "* Tu racontes une blague.<br>* Brumette rit : « Hihihi ! » (She giggles!)",
+                    "* Tu fais « Bouh ! »<br>* Brumette a peur... de toi ! (She's scared of you!)"
+                ],
+                attack: "* Brumette pleure. Ses larmes te mouillent ! (Her tears get you wet!)",
+                ready: "* Brumette ne pleure plus.<br>* Elle ne veut plus se battre. (She doesn't want to fight anymore.)",
+                notReady: "* Brumette est encore triste. (She's still sad. Keep answering!)",
+                spared: "* Brumette sourit. « Merci ! Je me souviens de ma maison ! »<br>* (Thank you! I remember my home!)"
+            },
+            questions: [
+                { type: "ask", fr: "Où habites-tu ?", en: "Where do you live?",
+                  answers: [
+                    { fr: "J'habite dans une ville.", emoji: "🏙️", en: "I live in a town." },
+                    { fr: "J'habite à la campagne.", emoji: "🌾", en: "I live in the countryside." }
+                  ] },
+                { type: "word", place: "la maison", wrong: "le parc" },
+                { type: "sentence", fr: "J'habite près de la mer.", right: "I live near the sea.", wrong: "I live in the mountains." },
+                { type: "ask", fr: "Qu'est-ce que tu aimes chez toi ?", en: "What do you like about where you live?",
+                  answers: [
+                    { fr: "J'aime le parc.", emoji: "🌳", en: "I like the park." },
+                    { fr: "J'aime la plage.", emoji: "🏖️", en: "I like the beach." }
+                  ] },
+                { type: "word", place: "la plage", wrong: "la montagne" }
+            ]
+        },
+        {
+            room: "LE PONT", scene: "🌉",
+            pages: ["* Un vieux pont de bois.<br>* Tu entends : « Ouaf ! Ouaf ! » (You hear: Woof! Woof!)"],
+            monster: {
+                emoji: "🐶", name: "Croquette",
+                appear: "* Croquette bloque le pont !<br>* Elle a des os, mais elle ne sait pas les compter. (She can't count her bones.)",
+                talk: [
+                    "* Tu caresses Croquette.<br>* Elle remue la queue ! (She wags her tail!)",
+                    "* Tu lances un os.<br>* Croquette court... et le mange. (She runs... and eats it.)",
+                    "* Tu dis « Assis ! »<br>* Croquette s'assoit. Bon chien ! (Good dog!)"
+                ],
+                attack: "* Croquette te lèche le visage ! Beurk ! (She licks your face!)",
+                ready: "* Croquette compte ses os : « Ouaf ! »<br>* Elle ne veut plus se battre. (She doesn't want to fight anymore.)",
+                notReady: "* Croquette veut encore compter. (She still wants to count!)",
+                spared: "* Croquette saute de joie. « Ouaf ! Je sais compter mes os ! »<br>* (I can count my bones!)"
+            },
+            questions: [
+                { type: "count", n: 3, other: 7, obj: "🦴" },
+                { type: "count", n: 8, other: 2, obj: "🦴" },
+                { type: "teen", n: 12, other: 15, obj: "🦴" },
+                { type: "hear", n: 13, other: 30 },
+                { type: "teen", n: 18, other: 11, obj: "🦴" }
+            ]
+        },
+        {
+            room: "LA MARE", scene: "🪷",
+            pages: ["* Une mare pleine de nénuphars.<br>* Il pleut un peu. (It's raining a little.)"],
+            monster: {
+                emoji: "🐸", name: "Rainette",
+                appear: "* Rainette saute devant toi !<br>* Elle veut voir le monde, mais elle a oublié les mots. (She wants to see the world.)",
+                talk: [
+                    "* Tu fais « Coâ ! »<br>* Rainette est impressionnée ! (She's impressed!)",
+                    "* Tu sautes comme une grenouille.<br>* Rainette applaudit. (She claps!)",
+                    "* Tu attrapes une mouche pour elle.<br>* Miam ! (Yum!)"
+                ],
+                attack: "* Rainette t'éclabousse ! Splash ! (She splashes you!)",
+                ready: "* Rainette chante : « Coâ, coâ ! »<br>* Elle ne veut plus se battre. (She doesn't want to fight anymore.)",
+                notReady: "* Rainette veut encore jouer. (She still wants to play!)",
+                spared: "* Rainette fait un grand saut. « Merci ! Un jour, je verrai le monde ! »<br>* (One day, I'll see the world!)"
+            },
+            questions: [
+                { type: "ask", fr: "Il fait quel temps chez toi ?", en: "What's the weather like where you live?",
+                  answers: [
+                    { fr: "Il fait beau.", emoji: "☀️", en: "It's sunny." },
+                    { fr: "Il pleut.", emoji: "🌧️", en: "It's raining." }
+                  ] },
+                { type: "read", n: 16, other: 6 },
+                { type: "word", place: "le monde", wrong: "la maison" },
+                { type: "sentence", fr: "J'aime ma ville.", right: "I like my town.", wrong: "I live in a house." },
+                { type: "read", n: 19, other: 9 }
+            ]
+        },
+        {
+            room: "LA GRANDE PORTE", scene: "🚪",
+            pages: [
+                "* Une énorme porte de pierre.<br>* C'est la sortie ! (It's the way out!)",
+                "* Mais un géant de pierre garde la porte...<br>* BOUM. BOUM. BOUM."
+            ],
+            monster: {
+                emoji: "🗿", name: "Monsieur Cent",
+                appear: "* Monsieur Cent dit : « POUR PASSER, IL FAUT COMPTER JUSQU'À CENT. »<br>* (To pass, you must count to 100.)",
+                talk: [
+                    "* Tu dis bonjour.<br>* Monsieur Cent dit « BONJOUR. » très fort. (Very loudly.)",
+                    "* Tu comptes ses cailloux.<br>* Il y en a beaucoup ! (There are lots!)",
+                    "* Tu lui fais un câlin.<br>* Il est froid... mais il sourit un peu. (He smiles a little.)"
+                ],
+                attack: "* Monsieur Cent te lance des chiffres ! (He throws numbers at you!)",
+                ready: "* Monsieur Cent ne bouge plus.<br>* Il ne veut plus se battre. (He doesn't want to fight anymore.)",
+                notReady: "* Monsieur Cent dit : « PAS ENCORE. » (Not yet!)",
+                spared: "* Monsieur Cent sourit enfin. « TU SAIS COMPTER. TU PEUX PASSER. »<br>* (You can count. You may pass.)"
+            },
+            questions: [
+                { type: "tens", n: 20, other: 50 },
+                { type: "hear", n: 30, other: 100 },
+                { type: "read", n: 40, other: 10 },
+                { type: "tens", n: 50, other: 30 },
+                { type: "read", n: 60, other: 20 },
+                { type: "hear", n: 100, other: 40 },
+                { type: "ask", fr: "Tu aimes vivre chez toi ?", en: "Do you like living where you live?",
+                  answers: [
+                    { fr: "Oui, j'adore !", emoji: "❤️", en: "Yes, I love it!" },
+                    { fr: "Un peu.", emoji: "🙂", en: "A little." }
+                  ] }
+            ]
+        }
+    ];
+
+    const FIGHT_LINE = "* Tu lèves ton bâton... mais non.<br>* On ne se bat pas avec ses amis ! (No fighting with friends!)";
+
+    // ================= STATE =================
+    let mode = "story";     // story | battle | spare | end
+    let chapter = 0;
+    let qIndex = 0;
+    let hp = 20;
+    let xp = 0;
+    let pies = 1;
+    let talkCount = 0;
+    let solved = false;
+    let storyPages = [];
+    let storyPos = 0;
+    let storyDone = null;
+
+    const $ = (id) => document.getElementById(id);
+    const place = (fr) => PLACES.find(p => p.fr === fr);
+    const ch = () => CHAPTERS[chapter];
+    const foe = () => ch().monster;
+
+    // ================= SPEECH =================
+    let frVoice = null;
+    function pickVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        frVoice = voices.find(v => v.lang === "fr-FR")
+            || voices.find(v => v.lang && v.lang.toLowerCase().startsWith("fr"))
+            || null;
+    }
+    if ("speechSynthesis" in window) {
+        pickVoice();
+        window.speechSynthesis.onvoiceschanged = pickVoice;
+    }
+    function say(text) {
+        if (!("speechSynthesis" in window) || !text) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "fr-FR";
+        if (frVoice) u.voice = frVoice;
+        u.rate = 0.8;
+        window.speechSynthesis.speak(u);
+    }
+    // Keep only the French: drop tags, English in brackets, stars and hearts
+    function frOnly(html) {
+        return html.replace(/<br\s*\/?>/gi, " ")
+            .replace(/<[^>]+>/g, "")
+            .replace(/\([^)]*\)/g, " ")
+            .replace(/[*♥⭐]/g, " ")
+            .replace(/\s+/g, " ").trim();
+    }
+    function tell(html) {
+        $("dialogue").innerHTML = html;
+        say(frOnly(html));
+    }
+
+    // ================= HUD =================
+    function updateHud() {
+        $("hp").textContent = hp + "/20";
+        $("hp").classList.toggle("low", hp <= 6);
+        $("xp").textContent = xp;
+        if (mode === "battle" || mode === "spare" || mode === "spared") {
+            const total = ch().questions.length;
+            $("foe").hidden = false;
+            $("foe").classList.toggle("happy", mode !== "battle");
+            $("foe-name").textContent = foe().name.toUpperCase();
+            $("foe-hearts").textContent = "♥".repeat(qIndex) + "♡".repeat(total - qIndex);
+        } else {
+            $("foe").hidden = true;
+        }
+        const menuOn = mode === "battle" || mode === "spare";
+        document.querySelectorAll("#menu button").forEach(b => { b.disabled = !menuOn; });
+        $("spare-btn").classList.toggle("ready", mode === "spare");
+    }
+
+    // ================= STORY PAGES =================
+    function story(pages, done) {
+        mode = "story";
+        storyPages = pages;
+        storyPos = 0;
+        storyDone = done;
+        $("choices").hidden = true;
+        $("bag").hidden = true;
+        $("show").textContent = "";
+        $("hint").textContent = "";
+        $("monster").classList.remove("spared");
+        $("next").hidden = false;
+        showPage();
+    }
+    function showPage() {
+        const p = storyPages[storyPos];
+        $("monster").textContent = p.scene;
+        if (p.room) $("room").textContent = p.room;
+        updateHud();
+        tell(p.text);
+    }
+    $("next").onclick = () => {
+        if (mode === "spared") {
+            nextChapter();
+            return;
+        }
+        if (mode !== "story") return;
+        storyPos++;
+        if (storyPos < storyPages.length) showPage();
+        else {
+            $("next").hidden = true;
+            storyDone();
+        }
+    };
+
+    // ================= CHAPTERS =================
+    function startChapter() {
+        const c = ch();
+        const pages = c.pages.map(t => ({ scene: c.scene, room: c.room, text: t }));
+        pages.push({ scene: c.monster.emoji, room: c.room, text: c.monster.appear });
+        story(pages, startBattle);
+    }
+    function startBattle() {
+        mode = "battle";
+        qIndex = 0;
+        talkCount = 0;
+        $("monster").textContent = foe().emoji;
+        loadQuestion();
+    }
+    function nextChapter() {
+        $("next").hidden = true;
+        chapter++;
+        if (chapter < CHAPTERS.length) startChapter();
+        else story(ENDING, finish);
+    }
+
+    // ================= QUESTIONS =================
+    function order(right, wrong) {
+        return qIndex % 2 === 0 ? [right, wrong] : [wrong, right];
+    }
+
+    function question() {
+        const q = ch().questions[qIndex];
+        const m = foe();
+
+        if (q.type === "ask") {
+            return {
+                text: "* " + m.name + " te pose une question :<br>* (" + q.en + ")",
+                show: q.fr, showClass: "sentence",
+                hint: "Pick the answer that is true for you!",
+                speak: q.fr,
+                listClass: "long",
+                options: q.answers.map(a => ({
+                    label: a.emoji + " " + a.fr, cls: "small", ok: true,
+                    win: "* " + m.name + " sourit !<br>* Répète : « " + a.fr + " » (" + a.en + ")",
+                    winSay: "Super ! " + a.fr + " Répète !"
+                }))
+            };
+        }
+
+        if (q.type === "word") {
+            const p = place(q.place), w = place(q.wrong);
+            return {
+                text: "* " + m.name + " cherche un mot.<br>* C'est quoi ? (What is it?)",
+                show: p.fr, showClass: "word",
+                hint: "Tap 🎒 OBJET to see your word book.",
+                speak: p.fr,
+                listClass: "",
+                options: order(
+                    { label: p.emoji, cls: "pic", ok: true,
+                      win: "* Oui ! " + p.fr + " = " + p.emoji + " " + p.en + "<br>* Répète : « " + p.fr + " » !",
+                      winSay: "Oui ! " + p.fr + " ! Répète : " + p.fr },
+                    { label: w.emoji, cls: "pic", ok: false }
+                )
+            };
+        }
+
+        if (q.type === "sentence") {
+            return {
+                text: "* " + m.name + " te dit :<br>* Ça veut dire quoi ? (What does it mean?)",
+                show: q.fr, showClass: "sentence",
+                hint: "Listen for the place word. Tap 🔊 to hear it again.",
+                speak: q.fr,
+                listClass: "long",
+                options: order(
+                    { label: q.right, cls: "small", ok: true,
+                      win: "* Oui ! « " + q.fr + " »<br>* = " + q.right + " Répète !",
+                      winSay: "Oui ! " + q.fr + " Répète !" },
+                    { label: q.wrong, cls: "small", ok: false }
+                )
+            };
+        }
+
+        // Number questions
+        const word = NUM[q.n];
+        const numberWin = {
+            ok: true,
+            win: "* Oui ! " + q.n + " = " + word + " !<br>* Répète : « " + word + " » ! (Say it out loud!)",
+            winSay: "Oui ! " + word + " ! Répète : " + word
+        };
+        const asWords = () => order(
+            Object.assign({ label: word, cls: "" }, numberWin),
+            { label: NUM[q.other], cls: "", ok: false }
+        );
+        const asDigits = () => order(
+            Object.assign({ label: String(q.n), cls: "digit" }, numberWin),
+            { label: String(q.other), cls: "digit", ok: false }
+        );
+
+        if (q.type === "count") {
+            return {
+                text: "* " + m.name + " te montre ses trésors.<br>* Combien ? (How many?)",
+                show: q.obj.repeat(q.n), showClass: "",
+                hint: "Compte ! Count them one by one.",
+                speak: "Combien ?",
+                listClass: "", options: asWords()
+            };
+        }
+        if (q.type === "teen") {
+            return {
+                text: "* " + m.name + " a un bloc de dix, et encore plus.<br>* Combien ? (How many?)",
+                show: "🔟" + q.obj.repeat(q.n - 10), showClass: "",
+                hint: "🔟 is ten. Count on from ten: 11, 12, 13...",
+                speak: "Combien ?",
+                listClass: "", options: asWords()
+            };
+        }
+        if (q.type === "tens") {
+            return {
+                text: "* " + m.name + " empile des blocs de dix.<br>* Combien ? (How many?)",
+                show: "🔟".repeat(q.n / 10), showClass: "",
+                hint: "Each 🔟 is ten. Count in tens: 10, 20, 30...",
+                speak: "Combien ?",
+                listClass: "", options: asWords()
+            };
+        }
+        if (q.type === "hear") {
+            return {
+                text: "* " + m.name + " dit un nombre.<br>* Écoute ! (Listen! Which number?)",
+                show: "🔊", showClass: "",
+                hint: "Tap 🔊 ÉCOUTER to hear it again.",
+                speak: word,
+                listClass: "", options: asDigits()
+            };
+        }
+        return {
+            text: "* " + m.name + " écrit un nombre.<br>* C'est quel nombre ? (Which number?)",
+            show: word, showClass: "word",
+            hint: "Stuck? Tap 🎒 OBJET for your number book.",
+            speak: word,
+            listClass: "", options: asDigits()
+        };
+    }
+
+    function loadQuestion() {
+        solved = false;
+        mode = "battle";
+        const view = question();
+
+        $("dialogue").innerHTML = view.text;
+        $("show").textContent = view.show;
+        $("show").className = "show " + view.showClass;
+        $("hint").textContent = view.hint;
+        $("bag").hidden = true;
+        $("next").hidden = true;
+
+        const box = $("choices");
+        box.innerHTML = "";
+        box.className = "choices " + view.listClass;
+        box.hidden = false;
+        view.options.forEach(opt => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "choice " + opt.cls;
+            b.textContent = opt.label;
+            b.onclick = () => answer(opt, b);
+            box.appendChild(b);
+        });
+
+        updateHud();
+        say(view.speak);
+    }
+
+    function answer(opt, btn) {
+        if (solved || mode !== "battle") return;
+
+        if (opt.ok) {
+            solved = true;
+            xp += 10;
+            qIndex++;
+            btn.classList.add("right");
+            $("dialogue").innerHTML = opt.win;
+            $("hint").textContent = "+10 XP ♥";
+            updateHud();
+            say(opt.winSay);
+            setTimeout(() => {
+                if (qIndex < ch().questions.length) loadQuestion();
+                else readyToSpare();
+            }, 4000);
+        } else {
+            btn.classList.add("wrong");
+            hp -= 2;
+            let text = foe().attack + "<br>* -2 HP. Essaie encore ! (Try again!)";
+            if (hp <= 0) {
+                hp = 20;
+                text = foe().attack + "<br>* Tu tombes... mais tu te relèves ! (You get back up! HP 20/20)";
+            }
+            $("monster").classList.remove("shake");
+            $("arena").classList.remove("hurt");
+            void $("monster").offsetWidth;
+            $("monster").classList.add("shake");
+            $("arena").classList.add("hurt");
+            updateHud();
+            tell(text);
+            $("hint").textContent = question().hint;
+        }
+    }
+
+    function readyToSpare() {
+        mode = "spare";
+        $("choices").hidden = true;
+        $("show").textContent = "";
+        $("hint").textContent = "Tap ⭐ ÉPARGNER to spare " + foe().name + "!";
+        updateHud();
+        tell(foe().ready);
+    }
+
+    function spare() {
+        mode = "spared";
+        pies++;
+        xp += 20;
+        $("monster").classList.add("spared");
+        $("bag").hidden = true;
+        $("hint").textContent = "+20 XP · 🥧 +1";
+        updateHud();
+        tell(foe().spared + "<br>* Tu reçois une tarte ! 🥧 (You get a pie!)");
+        $("next").hidden = false;
+    }
+
+    function finish() {
+        mode = "end";
+        $("room").textContent = "FIN";
+        $("monster").textContent = "🏆";
+        $("show").className = "show word";
+        $("show").textContent = xp + " XP";
+        $("hint").textContent = "";
+        $("choices").hidden = true;
+        $("bag").hidden = true;
+        $("menu").hidden = true;
+        $("next").hidden = false;
+        $("next").textContent = "REJOUER ▶";
+        updateHud();
+        tell("* Bravo ! Tu as épargné tous les monstres !<br>* (You spared every monster!)");
+        $("next").onclick = () => location.reload();
+    }
+
+    // ================= BAG (OBJET) =================
+    function buildBag() {
+        const bag = $("bag");
+        bag.innerHTML = "";
+
+        const pie = document.createElement("button");
+        pie.type = "button";
+        pie.className = "pie";
+        pie.textContent = "🥧 MANGER UNE TARTE (x" + pies + ")";
+        pie.onclick = eatPie;
+        bag.appendChild(pie);
+
+        const section = (title, items, cols) => {
+            const h = document.createElement("h3");
+            h.textContent = title;
+            const grid = document.createElement("div");
+            grid.className = "grid";
+            grid.style.gridTemplateColumns = "repeat(" + cols + ", 1fr)";
+            items.forEach(([big, small]) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                const top = document.createElement("b");
+                top.textContent = big;
+                b.append(top, small);
+                b.onclick = () => say(small);
+                grid.appendChild(b);
+            });
+            bag.append(h, grid);
+        };
+        section("LES NOMBRES", Object.keys(NUM).map(n => [n, NUM[n]]), 5);
+        section("CHEZ MOI", PLACES.map(p => [p.emoji, p.fr]), 4);
+    }
+
+    function eatPie() {
+        if (pies <= 0) {
+            tell("* Tu n'as plus de tarte. (No pies left!)");
+        } else if (hp >= 20) {
+            tell("* Tu n'as pas faim. (You're not hungry. HP is full!)");
+        } else {
+            pies--;
+            hp = Math.min(20, hp + 10);
+            updateHud();
+            tell("* Tu manges la tarte. Miam ! (+10 HP)");
+        }
+        buildBag();
+    }
+
+    // ================= MENU =================
+    $("menu").addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn || btn.disabled) return;
+        const act = btn.dataset.act;
+        if (solved && mode === "battle") return;
+
+        if (act === "item") {
+            const open = $("bag").hidden;
+            buildBag();
+            $("bag").hidden = !open;
+            if (mode === "battle") $("choices").hidden = open;
+            $("hint").textContent = open
+                ? "🎒 Ton sac. Tap a word to hear it! Tap OBJET again to close."
+                : (mode === "battle" ? question().hint : $("hint").textContent);
+        } else if (act === "fight") {
+            tell(FIGHT_LINE);
+        } else if (act === "talk") {
+            const lines = foe().talk;
+            tell(lines[talkCount % lines.length]);
+            talkCount++;
+            if (mode === "battle") $("hint").textContent = "Now answer " + foe().name + "'s question!";
+        } else if (act === "spare") {
+            if (mode === "spare") spare();
+            else tell(foe().notReady);
+        }
+    });
+
+    $("listen").onclick = () => {
+        if (!("speechSynthesis" in window)) {
+            $("hint").textContent = "No sound on this device, sorry.";
+            return;
+        }
+        if (mode === "battle" && !solved && $("choices").hidden === false) {
+            say(question().speak);
+        } else {
+            say(frOnly($("dialogue").innerHTML));
+        }
+    };
+
+    // ================= START =================
+    story(PRELUDE, startChapter);
+</script>
+
+</body></html>
