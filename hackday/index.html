@@ -81,6 +81,21 @@
   .moves p { font-size: 20px; color: var(--muted); }
   .moves li.done p { color: var(--fg); }
 
+  .pitch { border-left: 4px solid var(--stat); padding: 4px 0 4px 16px; margin: 0; font-size: 24px; max-width: 62ch; }
+  .steps { margin: 0; padding-left: 28px; display: flex; flex-direction: column; gap: 8px; color: var(--muted); }
+  .steps li::marker { font-family: var(--pixel); font-size: 11px; color: var(--menu); }
+  .steps b { color: var(--fg); font-weight: normal; }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+
+  .talks { display: flex; flex-direction: column; gap: 16px; }
+  .talk { border: 2px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .talk h3 { margin: 0; font-family: var(--pixel); font-weight: normal; font-size: 12px; line-height: 1.7; color: var(--stat); }
+  .talk h3 span { display: block; color: var(--muted); font-size: 9px; letter-spacing: 1px; }
+  .talk ol { margin: 0; padding-left: 28px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); }
+  .talk ol li::marker { font-family: var(--pixel); font-size: 10px; color: var(--menu); }
+  .quote { margin: 0; border: 3px solid var(--fg); background: var(--screen); padding: 14px 16px; font-size: 25px; color: var(--fg); }
+  .quote::before { content: "* "; color: var(--heart); }
+
   .wrap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 20px; }
   th { font-family: var(--pixel); font-size: 10px; color: var(--help); text-align: left; letter-spacing: 1px; padding: 0 10px 10px 0; font-weight: normal; }
@@ -142,6 +157,19 @@
     </ul>
   </section>
 
+  <section class="stack">
+    <h2>* HOW I STARTED</h2>
+    <p class="muted">My pitch, as I wrote it in my notebook:</p>
+    <blockquote class="pitch">A child falls into a dungeon and finds their way home by answering spoken French questions about where they live, the weather, hobbies and numbers up to 100, cheering up 4 friendly monsters and sparing them instead of fighting them.</blockquote>
+    <ol class="steps">
+      <li><b>New GitHub repo.</b></li>
+      <li><b>New Claude Code session</b> on it.</li>
+      <li><b>Create the PRD</b> and save it as a .md file in the repo.</li>
+      <li><b>Build, publish and improve</b>, one change at a time.</li>
+      <li><b>Ask Claude for a single web page</b> on what I built, with a link to it. This page.</li>
+    </ol>
+  </section>
+
   <section>
     <h2>* SAVE LOG</h2>
     <ol class="log">
@@ -200,6 +228,48 @@
       <p>Before and after the week, the child hears these 8 numbers and taps the digits. The goal is a score at least 3 higher, plus at least two unprompted plays.</p>
       <div class="digits">24 · 37 · 51 · 68 · 71 · 79 · 84 · 96</div>
       <p class="muted">Watching whether they say the "Répète !" lines aloud decides if a microphone is worth adding later.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>* NOTES FROM THE TALKS</h2>
+    <div class="talks">
+      <article class="talk">
+        <h3>Dr Phil B<span>HOST</span></h3>
+        <ul class="items">
+          <li><b>Built "Push"</b>, an iOS app for conference notes.</li>
+          <li><b>ChatGPT for strategy:</b> get it to interview you.</li>
+          <li><b>Claude or Codex for the build.</b></li>
+          <li><b>Know when to stop.</b></li>
+          <li><b>Know when to plan before you build.</b></li>
+        </ul>
+      </article>
+      <article class="talk">
+        <h3>Sam Kness<span>CLINICAL PARTNERS · AUTISM &amp; ADHD ASSESSMENTS</span></h3>
+        <ul class="items">
+          <li><b>AI agents</b> for community listening and industry briefings.</li>
+          <li><b>Claude with the Figma MCP</b> as a living blueprint.</li>
+          <li><b>The Mobbin MCP</b>, one to try.</li>
+          <li><b>Used Claude to make a blood pressure video.</b></li>
+          <li><b>A shared knowledge repository.</b></li>
+        </ul>
+        <p class="quote">AI gets you there faster. People decide where "there" is.</p>
+      </article>
+      <article class="talk">
+        <h3>Hal Sarjant<span>PRODUCT DEVELOPMENT</span></h3>
+        <ul class="items">
+          <li><b>Start with the bit you hate.</b> For Hal that's data analysis: there's never a dashboard you want or like.</li>
+          <li><b>The pitch:</b> type an address and get instant roof prices.</li>
+        </ul>
+        <ol>
+          <li>Let it interview you.</li>
+          <li>Talk, don't type.</li>
+          <li>Get something to react to: a prototype with fake data.</li>
+          <li>Show it to someone.</li>
+          <li>Say what good looks like.</li>
+          <li>Treat the agents like a team and make them check each other's work: build, check, step back.</li>
+        </ol>
+      </article>
     </div>
   </section>
 
