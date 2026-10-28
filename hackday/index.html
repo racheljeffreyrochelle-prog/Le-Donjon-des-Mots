@@ -99,11 +99,6 @@
   .photo { margin: 0; display: flex; flex-direction: column; gap: 8px; }
   .photo img { display: block; width: 100%; height: auto; border: 4px solid var(--fg); }
   .photo figcaption { color: var(--muted); font-size: 19px; }
-  .slide { border-top: 1px dashed var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-  .slide h4 { margin: 0; font-family: var(--pixel); font-weight: normal; font-size: 10px; letter-spacing: 1px; color: var(--help); line-height: 1.7; }
-  .prompts code { font-family: var(--text); color: var(--fg); }
-  .agenda td:first-child { color: var(--help); font-variant-numeric: tabular-nums; width: 70px; }
-  .agenda table { min-width: 0; }
 
   .wrap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 20px; }
@@ -138,8 +133,8 @@
   </section>
 
   <figure class="photo">
-    <img src="room.jpg" alt="Phil Bonhard welcomes everyone to the hack day in a room hung with red, yellow, green and black bunting, with the agenda on the screen behind him." width="1400" height="1050">
-    <figcaption>Phil Bonhard opens the day at 10:00 with the agenda on screen.</figcaption>
+    <img src="room.jpg" alt="Phil Bonnard welcomes everyone to the hack day in a room hung with red, yellow, green and black bunting, with the agenda on the screen behind him." width="1400" height="1050">
+    <figcaption>Phil Bonnard opens the day at 10:00 with the agenda on screen.</figcaption>
   </figure>
 
   <section class="stats" aria-label="The day in numbers">
@@ -246,66 +241,17 @@
   </section>
 
   <section>
-    <h2>* THE AGENDA</h2>
-    <div class="wrap agenda">
-      <table>
-        <tbody>
-          <tr><td>10:00</td><td>Welcome</td></tr>
-          <tr><td>10:10</td><td>SaidStore: from idea to app, Phil Bonhard</td></tr>
-          <tr><td>10:17</td><td>AI-enabled design at Clinical Partners, Sam Kness</td></tr>
-          <tr><td>10:24</td><td>From UX designer to startup CEO, Hal Sarjant</td></tr>
-          <tr><td>10:30</td><td>Publish your hello-world page</td></tr>
-          <tr><td>10:55</td><td>Build briefing and choosing a brief</td></tr>
-          <tr><td>11:05</td><td>AI interview and your product brief</td></tr>
-          <tr><td>11:30</td><td>Break</td></tr>
-          <tr><td>11:40</td><td>Build sprint 1</td></tr>
-          <tr><td>12:30</td><td>Lunch</td></tr>
-          <tr><td>13:15</td><td>Build sprint 2</td></tr>
-          <tr><td>14:15</td><td>Peer testing</td></tr>
-          <tr><td>14:35</td><td>Break</td></tr>
-          <tr><td>14:45</td><td>Improve, simplify and republish</td></tr>
-          <tr><td>15:30</td><td>Shipping and handover check</td></tr>
-          <tr><td>15:50</td><td>Demo groups</td></tr>
-          <tr><td>16:25</td><td>Highlights and recognition</td></tr>
-          <tr><td>16:50</td><td>Reflection and what next</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section>
     <h2>* NOTES FROM THE TALKS</h2>
     <div class="talks">
       <article class="talk">
-        <h3>Phil Bonhard<span>HOST · SAIDSTORE: FROM IDEA TO APP</span></h3>
+        <h3>Phil Bonnard<span>HOST</span></h3>
         <ul class="items">
-          <li><b>Built SaidStore</b>, an iOS app for conference notes.</li>
+          <li><b>Built "Said Store"</b>, an iOS app for conference notes.</li>
           <li><b>ChatGPT for strategy:</b> get it to interview you.</li>
           <li><b>Claude or Codex for the build.</b></li>
           <li><b>Know when to stop.</b></li>
           <li><b>Know when to plan before you build.</b></li>
         </ul>
-        <div class="slide">
-          <h4>SLIDE · THINK BEFORE YOU BUILD</h4>
-          <p>Ask your AI to interview you before it writes any code. Let it challenge you. You make the decisions. The questions to settle:</p>
-          <ol>
-            <li>Who is it for?</li>
-            <li>What's their problem?</li>
-            <li>What's the one journey that matters?</li>
-            <li>What's the smallest first release you can publish by lunch?</li>
-          </ol>
-          <p class="muted">Save what you agree in your repository as PRD.md, and read it before you say yes.</p>
-        </div>
-        <div class="slide prompts">
-          <h4>SLIDE · FIVE PROMPTS FOR TODAY</h4>
-          <ol>
-            <li><code>I want to build [idea]. Grill me, one question at a time, until you know what good looks like.</code></li>
-            <li><code>Press the mic and ramble. Ums and all.</code></li>
-            <li><code>Make me a clickable prototype of the whole journey. Fake data is fine.</code></li>
-            <li><code>Here's how it should feel when it's good: [...]. You work out how.</code></li>
-            <li><code>Check your own work like a tough reviewer. What obvious thing have we missed?</code></li>
-          </ol>
-        </div>
       </article>
       <article class="talk">
         <h3>Sam Kness<span>CLINICAL PARTNERS · AUTISM &amp; ADHD ASSESSMENTS</span></h3>
@@ -319,7 +265,7 @@
         <p class="quote">AI gets you there faster. People decide where "there" is.</p>
       </article>
       <article class="talk">
-        <h3>Hal Sarjant<span>FROM UX DESIGNER TO STARTUP CEO</span></h3>
+        <h3>Hal Sarjant<span>PRODUCT DEVELOPMENT</span></h3>
         <ul class="items">
           <li><b>Start with the bit you hate.</b> For Hal that's data analysis: there's never a dashboard you want or like.</li>
           <li><b>The pitch:</b> type an address and get instant roof prices.</li>
